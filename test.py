@@ -1,5 +1,4 @@
-from swarm import Agent
-from swarm.rabbitmq.swarm import SwarmRabbitMQ
+from swarm import Agent, SwarmRabbitMQ
 
 # RabbitMQ configuration
 rabbitmq_config = {

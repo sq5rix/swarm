@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
 
-from . import RabbitMQHandler
+from .handler import RabbitMQHandler
 from .types import Agent, Response
 
 

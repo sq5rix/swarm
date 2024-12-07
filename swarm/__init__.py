@@ -1,3 +1,9 @@
-from .core import *  # Original swarm imports
+from .core import *
+from .coreq import *
 
-__all__ = ["Swarm", "Agent"]  # Add all relevant exports
+__all__ = [
+    "Swarm",
+    "Agent",
+    "SwarmRabbitMQ",
+    "RabbitMQHandler",
+]  # Add all relevant exports
