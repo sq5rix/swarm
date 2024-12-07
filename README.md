@@ -1,5 +1,28 @@
 ![Swarm Logo](assets/logo.png)
 
+# RabbitMQ
+
+docker-compose up -d
+http://127.0.0.1:15672/
+user/password: guest
+Change later to real stuff
+
+First off, you need the management image (eg. rabbitmq:3-management) to access it through the browser. If your docker is running locally, then you should be able to access it by navigating to http://localhost:{port} or http://127.0.0.1:{port} (15672 by default).
+
+Here is an example of a simple docker-compose.yml:
+
+version: "3"
+services:
+rabbitmq:
+image: "rabbitmq:3-management"
+ports: - "5672:5672" - "15672:15672"
+volumes: - 'rabbitmq_data:/data'
+
+volumes:
+rabbitmq_data:
+
+After starting the container, Rabbitmq is now accessible at http:
+
 # Swarm (experimental, educational)
 
 An educational framework exploring ergonomic, lightweight multi-agent orchestration.
