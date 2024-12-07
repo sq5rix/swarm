@@ -1,6 +1,8 @@
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from openai import OpenAI
-from .rabbitmq_handler import RabbitMQHandler
+
+from . import RabbitMQHandler
 from .types import Agent, Response
 
 
