@@ -10,6 +10,7 @@ rabbitmq_config = {
 
 # Initialize SwarmRabbitMQ
 client = SwarmRabbitMQ(rabbitmq_config=rabbitmq_config)
+print(client)
 
 
 def transfer_to_agent_b():
@@ -19,12 +20,14 @@ def transfer_to_agent_b():
 # Define agents
 agent_a = Agent(
     name="Agent A",
+    model="llama3.1:latest",
     instructions="You are a helpful agent.",
     functions=[transfer_to_agent_b],
 )
 
 agent_b = Agent(
     name="Agent B",
+    model="llama3.1:latest",
     instructions="Only speak in Haikus.",
 )
 
