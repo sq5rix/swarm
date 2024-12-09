@@ -28,11 +28,18 @@ def start_consumer_for_agent(client, agent):
     max_retries = 3
     retry_count = 0
 
+    def create_new_connection():
+        """Create a fresh connection for the consumer"""
+        new_client = SwarmRabbitMQ(rabbitmq_config=rabbitmq_config)
+        new_client.register_agent(agent)
+        return new_client
+
     while retry_count < max_retries:
         try:
             print(f"\n[INFO] Starting consumer for {agent.name}")
-            client.start_consuming(agent, callback=message_handler)
-            # If we get here, the consumer ended normally
+            # Create a new connection for this consumer
+            consumer_client = create_new_connection()
+            consumer_client.start_consuming(agent, callback=message_handler)
             break
         except Exception as e:
             retry_count += 1
@@ -43,6 +50,11 @@ def start_consumer_for_agent(client, agent):
                     f"[INFO] Retry {retry_count}/{max_retries} for {agent.name} in {wait_time} seconds..."
                 )
                 time.sleep(wait_time)
+                # Clean up the failed connection
+                try:
+                    del consumer_client
+                except:
+                    pass
             else:
                 print(f"[ERROR] Max retries reached for {agent.name}")
                 break
@@ -72,13 +84,21 @@ try:
     consumer_threads = []
     for agent in [agent_a, agent_b]:
         consumer_thread = threading.Thread(
-            target=start_consumer_for_agent, args=(client, agent), daemon=True
+            target=start_consumer_for_agent,
+            args=(client, agent),
+            daemon=True,
+            name=f"Consumer-{agent.name}",  # Named threads for better debugging
         )
         consumer_threads.append(consumer_thread)
         consumer_thread.start()
 
-    # Wait for consumers to start
-    time.sleep(1)
+    # Wait for consumers to start and verify they're running
+    time.sleep(2)  # Give more time for consumers to initialize
+
+    # Check if consumers are alive
+    alive_consumers = [t for t in consumer_threads if t.is_alive()]
+    if len(alive_consumers) != len(consumer_threads):
+        print("[WARNING] Not all consumers started successfully")
 
     # Send test messages
     test_messages = [{"role": "user", "content": "I want to talk to agent B."}]
@@ -90,13 +110,13 @@ try:
     print("\n=== Sending Messages ===")
     try:
         response = client.run(agent_a, test_messages, context_variables=context)
-        # Convert any non-serializable objects to strings in the response
+        # Convert Response object to serializable dictionary
         serializable_response = {
-            "agent": str(response.get("agent", "")),
-            "status": str(response.get("status", "")),
-            "message_count": int(response.get("message_count", 0)),
-            "final_message": str(response.get("final_message", "")),
-            "context": response.get("context", {}),
+            "agent": str(getattr(response, "agent", "")),
+            "status": "queued",
+            "message_count": len(test_messages),
+            "final_message": str(getattr(response, "final_message", "")),
+            "context": context,
         }
         print(f"Run response: {json.dumps(serializable_response, indent=2)}")
     except Exception as e:

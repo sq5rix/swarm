@@ -33,7 +33,7 @@ class SwarmRabbitMQ:
             default_config.update(rabbitmq_config)
 
         if DEBUG:
-            print(f"[DEBUG] Connecting with config: {default_config}")
+            print(f"[DEBUG] Connecting with config: {default_coag}")
 
         # Initialize RabbitMQ handler
         self.rabbitmq = RabbitMQHandler(**default_config)
