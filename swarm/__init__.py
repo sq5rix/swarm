@@ -5,5 +5,4 @@ __all__ = [
     "Swarm",
     "Agent",
     "SwarmRabbitMQ",
-    "RabbitMQHandler",
-]  # Add all relevant exports
+]
