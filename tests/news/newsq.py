@@ -86,4 +86,4 @@ response = client.run(
     ],
 )
 
-print(response)
+print(response.messages[-1]["content"])
