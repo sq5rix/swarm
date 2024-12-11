@@ -1,46 +1,27 @@
+import logging
+import time
+
 from duck import search_news
 from models import model_list
 from prompts import *
 
 from swarm import Agent, SwarmRabbitMQ
 
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("NewsAgents")
+
+# Initialize SwarmRabbitMQ client
 client = SwarmRabbitMQ()
 
 QWEN7 = 2
 LLAMA7 = 0
 GPT = 10
-
 MODEL = LLAMA7
 
-
-def search_news_agent(q=None, query=None):
-    """
-    Accept either 'q' or 'query' parameter for search
-    """
-    return news_gatherer
-
-
-def write_article(content=None):
-    return article_writer
-
-
-def publish_article(article=None):
-    return publisher
-
-
-news_director = Agent(
-    name="NewsDirector",
-    model=model_list[MODEL],
-    instructions="""You are a News Director responsible for:
-    1. Deciding what topics to cover
-    2. Coordinating the news gathering and writing process
-    3. Ensuring high-quality content
-    4. Managing the publication workflow
-    
-    Provide clear instructions about what news to gather and what angle to take.""",
-    functions=[search_news_agent, write_article, publish_article],
-)
-
+# Define the worker agents
 news_gatherer = Agent(
     name="NewsGatherer",
     model=model_list[MODEL],
@@ -51,6 +32,7 @@ news_gatherer = Agent(
     4. Provides structured data for the article writer
     
     Always verify sources and collect multiple perspectives.""",
+    functions=[search_news],
 )
 
 article_writer = Agent(
@@ -76,14 +58,49 @@ publisher = Agent(
     
     Ensure proper formatting and metadata.""",
 )
-response = client.run(
-    agent=news_director,
-    messages=[
-        {
-            "role": "user",
-            "content": "Find and write an article about the latest developments in artificial intelligence.",
-        }
-    ],
-)
 
-print(response.messages[-1]["content"])
+# Register agents with the client
+logger.info("Registering agents...")
+client.register_agent(news_gatherer)
+logger.info(f"Agent {news_gatherer.name} registered")
+client.register_agent(article_writer)
+logger.info(f"Agent {article_writer.name} registered")
+client.register_agent(publisher)
+logger.info(f"Agent {publisher.name} registered")
+
+
+if __name__ == "__main__":
+    print("\nStarting News Agents System...")
+    print("Waiting for tasks. Press Ctrl+C to exit.\n")
+
+    try:
+        while True:
+            # Check for messages in the queue
+            for agent in [news_gatherer, article_writer, publisher]:
+                try:
+                    # Try to get a message from the queue
+                    message = client.receive_message(agent.name)
+                    if message:
+                        print(f"\n{'='*50}")
+                        print(f"Message received for {agent.name}:")
+                        print(f"Content: {message[:200]}...")
+                        print(f"{'='*50}")
+
+                        # Process the message
+                        response = client.run(
+                            agent=agent, messages=[{"role": "user", "content": message}]
+                        )
+
+                        print(f"\nResponse from {agent.name}:")
+                        print(f"{'='*50}")
+                        print(response.messages[-1]["content"][:200])
+                        print(f"{'='*50}\n")
+                except Exception as e:
+                    if "no attribute 'receive_message'" not in str(e):
+                        print(f"Error processing messages for {agent.name}: {e}")
+
+            time.sleep(1)  # Wait a second before checking again
+
+    except KeyboardInterrupt:
+        print("\nShutting down workers...")
+        client.close()
